@@ -1,8 +1,6 @@
 /* TechDonuts' Sharp GP2Y1010 Sensor Sketch */
 
 /* User Adjustible Variables */
-float maxVoltage = 0.0;   // Voltage we get when the sensor is completely blocked
-float minVoltage = 0.0;   // Voltage we get when the sensor is sealed with tape and left for 30m
 const byte measurePin   = 0;     // Analog pin we measure the output from. 
 const byte ledClock     = 2;     // Digital pin we provide the clock signal from. 
 
@@ -12,6 +10,8 @@ int samplingPad  = 40;    // Our LED Pulse should last 32ms , this means samplin
 int sleepTime    = 9480;  // The time between pulses should be 10ms , or sleeptime + samplingPad + samplingTime + readTime
 int readTime     = 200;   // Amount of time alloted to the ADC read/conversion 
 int adcReading   = 0;     // Value that comes out of the ADC ( 0-1023 )
+float maxVoltage = 0.0;   // Voltage we get when the sensor is completely blocked
+float minVoltage = 0.0;   // Voltage we get when the sensor is sealed with tape and left for 30m
 #define PRINT(x) Serial.print(x)
 
 /* SETUP */
