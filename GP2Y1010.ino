@@ -1,8 +1,6 @@
 /* TechDonuts' Sharp GP2Y1010 Sensor Sketch */
 
 /* User Adjustible Variables */
-float maxVoltage = 0.0;   // Voltage we get when the sensor is completely blocked
-float minVoltage = 0.0;   // Voltage we get when the sensor is sealed with tape and left for 30m
 const byte measurePin   = 0;     // Analog pin we measure the output from. 
 const byte ledClock     = 2;     // Digital pin we provide the clock signal from. 
 
@@ -11,7 +9,10 @@ int samplingTime = 280;   // How long we wait after turning on the LED to take a
 int samplingPad  = 40;    // Our LED Pulse should last 32ms , this means samplingTime + samplingPad
 int sleepTime    = 9480;  // The time between pulses should be 10ms , or sleeptime + samplingPad + samplingTime + readTime
 int readTime     = 200;   // Amount of time alloted to the ADC read/conversion 
-int adcReading   = 0;     // Value that comes out of the ADC ( 0-1023 )
+float maxVoltage = 0.0;   // Highest sensor reading
+float minVoltage = 0.0;   // Lowest sensor reading
+const int numReadingsTillAverage = 10; // How many readings we will keep to do an average
+int adcReadings[numReadingsTillAverage]; // Array holding all of our adc readings to be averaged
 #define PRINT(x) Serial.print(x)
 
 /* SETUP */
@@ -31,11 +32,10 @@ void setup(){
 /* LOOP */
 void loop(){
 
-  int numLoopsTillRest = 10;
   int numLoops = 0;
 
   // Take a number of readings, then rest
-  while(numLoops != numLoopsTillRest){
+  while(numLoops != numReadingsTillAverage-1){
     
     digitalWrite(ledClock,LOW); // Start our LED Pulse
     delayMicroseconds(samplingTime); // Wait until we are in spec to take a reading
@@ -44,7 +44,7 @@ void loop(){
     bitSet(ADCSRA , ADSC); 
   
     // Pad our LED pulse out to (hopefully) 32ms
-    delayMicroseconds(samplingPad); 
+    delayMicroseconds(samplingPad);
     digitalWrite(ledClock,HIGH);
   
     // Allow time for ADC to finish reading
@@ -52,7 +52,7 @@ void loop(){
   
     // If our ADC is done, read the value.
     if(bit_is_clear(ADCSRA , ADSC)){
-      adcReading = ADC; // Read
+      adcReadings[numLoops] = ADC; // Read
     }
   
     // Sleep until next pulse start
@@ -64,8 +64,16 @@ void loop(){
 
   delay(500);
 
+  // Average all our readings!
+  float adcTotal = 0.0;
+  for( int thisReading = 0; thisReading != numReadingsTillAverage-1; thisReading++ ){
+    adcTotal += adcReadings[thisReading];
+  }
+
+  float adcAverage = adcTotal/(numReadingsTillAverage-1);
+
   // Standard ADC voltage transform
-  float voltage = adcReading * (5.0/1023.0);
+  float voltage = adcAverage * (5.0/1023.0);
 
   // Grab our min/max voltages - we sanity check these because vibration and other factors can cause bad readings
   if(voltage > maxVoltage && voltage < 5.0){ maxVoltage = voltage; }
@@ -73,8 +81,9 @@ void loop(){
   if(minVoltage == 0.0){ minVoltage = voltage; } // Catch our zero!
 
   // Debug stuffs
-  PRINT("Voltage: "); PRINT(voltage); PRINT(" Max Voltage: ");  PRINT(maxVoltage); PRINT(" Min Voltage: "); PRINT(minVoltage); PRINT("\n");
-  PRINT("DeltaV: "); PRINT( voltage - minVoltage ); PRINT("\n");
+  Serial.println(voltage);
+ // PRINT("Voltage: "); PRINT(voltage); PRINT(" Max Voltage: ");  PRINT(maxVoltage); PRINT(" Min Voltage: "); PRINT(minVoltage); PRINT("\n");
+ // PRINT("DeltaV: "); PRINT( voltage - minVoltage ); PRINT("\n");
 
 
 }
